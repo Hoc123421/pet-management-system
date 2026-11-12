@@ -1,0 +1,10 @@
+git:latest
+workflow-aggregator:latest
+pipeline-stage-view:latest
+docker-workflow:latest
+sonar:latest
+ssh-credentials:latest
+ssh-agent:latest
+credentials-binding:latest
+timestamper:latest
+ws-cleanup:latest

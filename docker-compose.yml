@@ -1,0 +1,48 @@
+name: petmanagement-app
+
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: petmanagement_sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=YourStrong@Password2026
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    restart: always
+    networks:
+      - petnet
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong@Password2026' -C -Q 'SELECT 1' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: petmanagement_webapp:latest
+    container_name: petmanagement_webapp
+    ports:
+      - "5000:80"       # App -> http://localhost:5000 / http://PUBLIC_IP:5000
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__DefaultConnection=Server=db,1433;Database=PetManagementDb;User Id=sa;Password=YourStrong@Password2026;TrustServerCertificate=True;
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: always
+    networks:
+      - petnet
+
+volumes:
+  sqlserver_data:
+
+networks:
+  petnet:
+    name: petnet

@@ -1,0 +1,26 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.userprefs
+**/TestResults/
+**/coverage.opencover.xml
+ci/jenkins/sonar-token.txt
+
+# Docker
+*.tar.gz
+
+# Sensitive files
+**/secrets/
+*.pem
+*.key
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PetCare Hub - Hệ Thống Quản Lý & Chăm Sóc Thú Cưng Hiện Đại</title>
+  <meta name="description" content="Hệ thống quản lý thú cưng, dịch vụ spa grooming, tiêm phòng, khám sức khỏe và cửa hàng phụ kiện thú cưng cao cấp.">
+  
+  <!-- FontAwesome & Fonts -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <!-- Google Identity Services SDK -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+
+<body>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Navbar -->
+  <div class="navbar-wrapper">
+    <nav class="navbar">
+      <a href="#" class="brand-logo" onclick="switchTab('all')">
+        <div class="brand-icon"><i class="fas fa-paw"></i></div>
+        <div class="brand-title">PetCare<span>Hub</span></div>
+      </a>
+
+      <button class="menu-toggle" onclick="document.querySelector('.nav-links').classList.toggle('active')">
+        <i class="fas fa-bars"></i>
+      </button>
+
+      <ul class="nav-links">
+        <li><a class="nav-link active" href="#heroSection" onclick="switchTab('all')">Trang Chủ</a></li>
+        <li><a class="nav-link" href="#petCatalogSection" onclick="switchTab('all')">Thú Cưng</a></li>
+        <li><a class="nav-link" href="#serviceSection" onclick="switchTab('all')">Dịch Vụ</a></li>
+        <li><a class="nav-link" href="#productSection" onclick="switchTab('all')">Cửa Hàng</a></li>
+        <li><a class="nav-link" href="#contactSection" onclick="switchTab('all')">Liên Hệ</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <button id="themeToggle" class="btn-theme" title="Đổi Giao Diện">
+          <i class="fas fa-moon"></i>
+        </button>
+
+        <div style="position: relative; cursor: pointer;" onclick="openCartModal()" title="Xem Giỏ Hàng">
+          <i class="fas fa-shopping-bag" style="font-size: 1.3rem; color: var(--text-main);"></i>
+          <span id="cartBadgeCount" class="badge badge-danger" style="position: absolute; top: -8px; right: -10px; padding: 2px 6px; font-size: 0.7rem;">0</span>
+        </div>
+
+
+        <div id="authNavActions">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Main Content Wrapper -->
+  <div id="mainContent">
+
+    <!-- Hero Section -->
+    <section id="heroSection" class="hero-section">
+      <div class="container">
+        <div class="hero-grid">
+          <div>
+            <div class="hero-badge"><i class="fas fa-sparkles"></i> Hệ Thống Quản Lý Thú Cưng Hàng Đầu</div>
+            <h1 class="hero-title">Chăm Sóc & Quản Lý <span class="gradient-text">Thú Cưng Yêu Thương</span> Dễ Dàng</h1>
+            <p class="hero-desc">Giải pháp toàn diện cho việc quản lý hồ sơ thú cưng, đặt lịch dịch vụ Spa, tiêm phòng, khám chữa bệnh và sắm phụ kiện cao cấp chỉ với vài thao tác.</p>
+            <div class="hero-buttons">
+              <button class="btn btn-primary" onclick="openBookingModal()"><i class="far fa-calendar-alt"></i> Đặt Lịch Chăm Sóc Ngay</button>
+              <button class="btn btn-secondary" onclick="openPetModal()"><i class="fas fa-plus-circle"></i> Thêm Thú Cưng Mới</button>
+            </div>
+          </div>
+
+          <div class="hero-image-card">
+            <img src="/images/pet_hero_banner_1786347242679.jpg" alt="PetCare Hero Lounge">
+            <div class="floating-stat-card">
+              <div class="stat-icon"><i class="fas fa-heart"></i></div>
+              <div>
+                <div style="font-weight: 800; font-size: 1.1rem;">1,500+ Thú Cưng</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">Được chăm sóc chu đáo mỗi tháng</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature Stats Bar -->
+        <div class="stats-bar">
+          <div class="stat-box">
+            <div class="stat-num">99.8%</div>
+            <div class="stat-label">Hài Lòng Từ Chủ Thú Cưng</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num">24/7</div>
+            <div class="stat-label">Bác Sĩ Thú Y Hỗ Trợ</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num">10+</div>
+            <div class="stat-label">Dịch Vụ Spa & Grooming</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num">100%</div>
+            <div class="stat-label">Sản Phẩm Chính Hãng</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pet Catalog Section -->
+    <section id="petCatalogSection" style="padding: 60px 0;">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag">Hồ Sơ Thú Cưng</span>
+          <h2 class="section-title">Danh Sách Thú Cưng Đang Quản Lý</h2>
+          <p style="color: var(--text-muted);">Tra cứu thông tin, tình trạng sức khỏe, giống loài và quản lý danh sách thú cưng của bạn.</p>
+        </div>
+
+        <!-- Controls Bar -->
+        <div class="controls-bar">
+          <div class="search-input-group">
+            <i class="fas fa-search"></i>
+            <input type="text" id="petSearchInput" class="form-control" placeholder="Tìm tên thú cưng, giống, tình trạng...">
+          </div>
+
+          <div class="filter-group">
+            <select id="petSpeciesFilter" class="form-select">
+              <option value="Tất cả">Tất cả loài</option>
+              <option value="Chó">Chó 🐶</option>
+              <option value="Mèo">Mèo 🐱</option>
+              <option value="Thỏ">Thỏ 🐰</option>
+            </select>
+
+            <select id="petSortSelect" class="form-select">
+              <option value="newest">Mới nhất</option>
+              <option value="name_asc">Tên (A - Z)</option>
+              <option value="age_asc">Tuổi tăng dần</option>
+              <option value="weight_desc">Cân nặng giảm dần</option>
+            </select>
+
+            <button class="btn btn-primary btn-sm" onclick="openPetModal()">
+              <i class="fas fa-plus"></i> Thêm Thú Cưng
+            </button>
+          </div>
+        </div>
+
+        <!-- Pet Cards Grid -->
+        <div id="petGridContainer" class="pet-grid"></div>
+
+        <!-- Pagination -->
+        <div id="petPagination" class="pagination"></div>
+      </div>
+    </section>
+
+    <!-- Services Section -->
+    <section id="serviceSection" style="padding: 60px 0; background: var(--primary-light);">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag">Chăm Sóc Chuyên Nghiệp</span>
+          <h2 class="section-title">Dịch Vụ Nổi Bật Dành Cho Thú Cưng</h2>
+          <p style="color: var(--text-muted);">Trải nghiệm dịch vụ tắm spa, tạo kiểu lông, tiêm vắc-xin và lưu trú khách sạn cao cấp.</p>
+          <button class="btn btn-secondary btn-sm" onclick="openMyAppointmentsModal()" style="margin-top: 12px;"><i class="far fa-calendar-alt"></i> Xem Lịch Sử Đặt Lịch Của Tôi</button>
+        </div>
+
+
+        <div id="servicesContainer" class="service-grid"></div>
+      </div>
+    </section>
+
+    <!-- Products Shop Section -->
+    <section id="productSection" style="padding: 60px 0;">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag">Pet Shop & Accessories</span>
+          <h2 class="section-title">Thức Ăn & Phụ Kiện Thú Cưng</h2>
+          <p style="color: var(--text-muted);">Mua sắm hạt dinh dưỡng, pate, đồ chơi tương tác và sản phẩm chăm sóc sức khỏe chính hãng.</p>
+        </div>
+
+        <div class="controls-bar">
+          <div class="search-input-group">
+            <i class="fas fa-search"></i>
+            <input type="text" id="productSearchInput" class="form-control" placeholder="Tìm sản phẩm, thức ăn, hạt...">
+          </div>
+
+          <div class="filter-group">
+            <select id="productCategoryFilter" class="form-select">
+              <option value="Tất cả">Tất cả danh mục</option>
+              <option value="Thức Ăn">Thức Ăn 🍖</option>
+              <option value="Đồ Chơi">Đồ Chơi 🎾</option>
+              <option value="Sức Khỏe">Sức Khỏe 🩺</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="productGridContainer" class="product-grid"></div>
+
+        <div id="productPagination" class="pagination"></div>
+      </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contactSection" style="padding: 60px 0; background: var(--bg-card);">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag">Hỗ Trợ Khách Hàng</span>
+          <h2 class="section-title">Liên Hệ Với Chúng Tôi</h2>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
+          <div style="background: var(--bg-card-solid); padding: 30px; border-radius: var(--radius-lg); border: 1px solid var(--border-glass);">
+            <h3 style="margin-bottom: 20px; font-size: 1.3rem;">Thông Tin Trung Tâm</h3>
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              <div><i class="fas fa-map-marker-alt" style="color: var(--primary);"></i> 123 Nguyễn Trãi, TP. Hà Nội</div>
+              <div><i class="fas fa-phone-alt" style="color: var(--primary);"></i> Hotline: 1900 6789 - (012) 3456 9999</div>
+              <div><i class="fas fa-envelope" style="color: var(--primary);"></i> Email: cskh@petcarehub.com</div>
+              <div><i class="fas fa-clock" style="color: var(--primary);"></i> Giờ mở cửa: 08:00 - 20:00 (Tất cả các ngày)</div>
+            </div>
+          </div>
+
+          <div style="background: var(--bg-card-solid); padding: 30px; border-radius: var(--radius-lg); border: 1px solid var(--border-glass);">
+            <h3 style="margin-bottom: 20px; font-size: 1.3rem;">Gửi Lời Nhắn</h3>
+            <form onsubmit="handleContactSubmit(event)">
+              <div style="margin-bottom: 14px;">
+                <input type="text" id="contactName" class="form-control" placeholder="Họ và tên của bạn" required style="padding-left: 16px;">
+              </div>
+              <div style="margin-bottom: 14px;">
+                <input type="email" id="contactEmail" class="form-control" placeholder="Địa chỉ Email" required style="padding-left: 16px;">
+              </div>
+              <div style="margin-bottom: 14px;">
+                <textarea id="contactMessage" class="form-control" rows="4" placeholder="Nội dung cần hỗ trợ..." required style="padding-left: 16px; border-radius: var(--radius-md);"></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary" style="width: 100%;">Gửi Tin Nhắn <i class="fas fa-paper-plane"></i></button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Admin Section (Controlled independently) -->
+  <section id="adminSection" style="display: none; padding-top: 130px; padding-bottom: 80px; min-height: 80vh;">
+    <div class="container">
+      <div class="section-header" style="margin-bottom: 24px;">
+        <span class="section-tag">Admin Management Console</span>
+        <h2 class="section-title">Bảng Quản Trị Hệ Thống</h2>
+        <p style="color: var(--text-muted);">Quản lý toàn bộ thông tin Thú Cưng, Dịch Vụ, Lịch Hẹn, Sản Phẩm và Báo Cáo Doanh Thu.</p>
+      </div>
+
+      <!-- Stats Overview Bar -->
+      <div class="stats-bar" style="margin-bottom: 30px;">
+        <div class="stat-box">
+          <div id="statTotalPets" class="stat-num">0</div>
+          <div class="stat-label">Tổng Thú Cưng</div>
+        </div>
+        <div class="stat-box">
+          <div id="statTotalAppointments" class="stat-num">0</div>
+          <div class="stat-label">Tổng Lịch Hẹn</div>
+        </div>
+        <div class="stat-box">
+          <div id="statPendingAppointments" class="stat-num">0</div>
+          <div class="stat-label">Đang Chờ Duyệt</div>
+        </div>
+        <div class="stat-box">
+          <div id="statTotalRevenue" class="stat-num">0 đ</div>
+          <div class="stat-label">Doanh Thu Dịch Vụ</div>
+        </div>
+      </div>
+
+      <!-- Sub Tabs Navigation -->
+      <div style="display: flex; gap: 10px; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; flex-wrap: wrap;">
+        <button class="btn btn-primary btn-sm admin-sub-tab active" onclick="switchAdminSubTab('pets')"><i class="fas fa-dog"></i> Quản Lý Thú Cưng</button>
+        <button class="btn btn-secondary btn-sm admin-sub-tab" onclick="switchAdminSubTab('appointments')"><i class="far fa-calendar-check"></i> Quản Lý Lịch Hẹn</button>
+        <button class="btn btn-secondary btn-sm admin-sub-tab" onclick="switchAdminSubTab('services')"><i class="fas fa-concierge-bell"></i> Quản Lý Dịch Vụ</button>
+        <button class="btn btn-secondary btn-sm admin-sub-tab" onclick="switchAdminSubTab('products')"><i class="fas fa-box-open"></i> Quản Lý Sản Phẩm</button>
+      </div>
+
+      <!-- Sub Tab 1: Pets CRUD Table -->
+      <div id="adminTabPets" class="admin-tab-content">
+        <div class="data-table-container">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="font-size: 1.2rem; font-weight: 800;">Danh Sách Hồ Sơ Thú Cưng (CRUD)</h3>
+            <button class="btn btn-primary btn-sm" onclick="openPetModal()"><i class="fas fa-plus"></i> Thêm Thú Cưng Mới</button>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Thú Cưng</th>
+                <th>Loài / Giống</th>
+                <th>Tuổi / Cân Nặng</th>
+                <th>Chủ Sở Hữu</th>
+                <th>Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody id="adminTableBody">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Sub Tab 2: Appointments Table -->
+      <div id="adminTabAppointments" class="admin-tab-content" style="display: none;">
+        <div class="data-table-container">
+          <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 16px;">Danh Sách Lịch Hẹn Chăm Sóc</h3>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Mã Đơn</th>
+                <th>Khách Hàng</th>
+                <th>Thú Cưng</th>
+                <th>Dịch Vụ</th>
+                <th>Ngày Giờ Hẹn</th>
+                <th>Trạng Thái</th>
+                <th>Thao Tác Duyệt</th>
+              </tr>
+            </thead>
+            <tbody id="adminAppointmentsBody">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Sub Tab 3: Services Table -->
+      <div id="adminTabServices" class="admin-tab-content" style="display: none;">
+        <div class="data-table-container">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="font-size: 1.2rem; font-weight: 800;">Danh Sách Dịch Vụ Spa & Khám</h3>
+            <button class="btn btn-primary btn-sm" onclick="openServiceModal()"><i class="fas fa-plus"></i> Thêm Dịch Vụ Mới</button>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Tên Dịch Vụ</th>
+                <th>Danh Mục</th>
+                <th>Thời Gian</th>
+                <th>Giá Dịch Vụ</th>
+                <th>Trạng Thái</th>
+                <th>Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody id="adminServicesBody">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Sub Tab 4: Products Table -->
+      <div id="adminTabProducts" class="admin-tab-content" style="display: none;">
+        <div class="data-table-container">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="font-size: 1.2rem; font-weight: 800;">Danh Sách Sản Phẩm Shop (CRUD)</h3>
+            <button class="btn btn-primary btn-sm" onclick="openProductModal()"><i class="fas fa-plus"></i> Thêm Sản Phẩm Mới</button>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Sản Phẩm</th>
+                <th>Danh Mục</th>
+                <th>Tồn Kho</th>
+                <th>Giá Bán</th>
+                <th>Đánh Giá</th>
+                <th>Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody id="adminProductsBody">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- MODALS -->
+
+  <!-- Pet Modal (Add & Edit) -->
+  <div id="addPetModal" class="modal-overlay">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeModal('addPetModal')">&times;</button>
+      <h3 id="petModalTitle" class="modal-title">Thêm Hồ Sơ Thú Cưng Mới</h3>
+      <form onsubmit="handlePetFormSubmit(event)">
+        <input type="hidden" id="editPetId">
+        <div style="margin-bottom: 14px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 6px;">Tên Thú Cưng</label>
+          <input type="text" id="addPetName" class="form-control" placeholder="Ví dụ: Bé Bơ" required style="padding-left: 16px;">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+          <div>
+            <label style="font-weight: 600; display: block; margin-bottom: 6px;">Loài</label>
+            <select id="addPetSpecies" class="form-select" style="width: 100%;">
+              <option value="Chó">Chó</option>
+              <option value="Mèo">Mèo</option>
+              <option value="Thỏ">Thỏ</option>
+              <option value="Khác">Khác</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-weight: 600; display: block; margin-bottom: 6px;">Giống</label>
+            <input type="text" id="addPetBreed" class="form-control" placeholder="Poodle, Corgi..." style="padding-left: 16px;">
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+          <div>
+            <label style="font-weight: 600; display: block; margin-bottom: 6px;">Tuổi (năm)</label>
+            <input type="number" id="addPetAge" class="form-control" value="1" min="0" style="padding-left: 16px;">
+          </div>
+          <div>
+            <label style="font-weight: 600; display: block; margin-bottom: 6px;">Cân nặng (kg)</label>
+            <input type="number" step="0.1" id="addPetWeight" class="form-control" value="3.5" min="0" style="padding-left: 16px;">
+          </div>
+        </div>
+        <div style="margin-bottom: 14px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 6px;">Giới Tính</label>
+          <select id="addPetGender" class="form-select" style="width: 100%;">
+            <option value="Đực">Đực</option>
+            <option value="Cái">Cái</option>
+          </select>
+        </div>
+        <div style="margin-bottom: 14px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 6px;">Link Hình Ảnh (URL)</label>
+          <input type="text" id="addPetImage" class="form-control" placeholder="https://... hoặc /images/..." style="padding-left: 16px;">
+        </div>
+        <div style="margin-bottom: 20px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 6px;">Ghi Chú Sức Khỏe</label>
+          <textarea id="addPetNotes" class="form-control" rows="2" placeholder="Tình trạng tiêm vắc-xin, ăn uống..." style="padding-left: 16px; border-radius: var(--radius-md);"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Lưu Hồ Sơ Thú Cưng</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Product Modal (Add & Edit) -->
+  <div id="productModal" class="modal-overlay">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeModal('productModal')">&times;</button>
+      <h3 id="productModalTitle" class="modal-title">Thêm Sản Phẩm Mới</h3>
+      <form onsubmit="handleProductFormSubmit(event)">
+        <input type="hidden" id="prodId">
+        <div style="margin-bottom: 14px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 6px;">Tên Sản Phẩm</label>
+          <input type="text" id="prodName" class="form-control" placeholder="Tên sản phẩm..." required style="padding-left: 16px;">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+          <div>
+            <label style="font-weight: 600; display: block; margin-bottom: 6px;">Danh Mục</label>
+            <select id="prodCategory" class="form-select" style="width: 100%;">
+              <option value="Thức Ăn">Thức Ăn</option>
+              <option value="Đồ Chơi">Đồ Chơi</option>
+              <option value="Phụ Kiện">Phụ Kiện</option>
+              <option value="Sức Khỏe">Sức Khỏe</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-weight: 600; display: block; margin-bottom: 6px;">Giá Bán (VNĐ)</label>
+            <input type="number" id="prodPrice" class="form-control" placeholder="100000" required style="padding-left: 16px;">
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+          <div>
+            <label style="font-weight: 600; display: block; margin-bottom: 6px;">Số Lượng Tồn Kho</label>
+            <input type="number" id="prodStock" class="form-control" value="50" style="padding-left: 16px;">
+          </div>
+          <div>
+            <label style="font-weight: 600; display: block; margin-bottom: 6px;">Đánh Giá (1.0 - 5.0)</label>
+            <input type="number" step="0.1" id="prodRating" class="form-control" value="4.8" min="1" max="5" style="padding-left: 16px;">
+          </div>
+        </div>
+        <div style="margin-bottom: 14px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 6px;">Link Hình Ảnh (URL)</label>
+          <input type="text" id="prodImage" class="form-control" placeholder="https://..." style="padding-left: 16px;">
+        </div>
+        <div style="margin-bottom: 20px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 6px;">Mô Tả Sản Phẩm</label>
+          <textarea id="prodDesc" class="form-control" rows="3" placeholder="Mô tả công dụng, thành phần..." style="padding-left: 16px; border-radius: var(--radius-md);"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Lưu Sản Phẩm</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Service Modal (Add & Edit) -->
+  <div id="serviceModal" class="modal-overlay">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeModal('serviceModal')">&times;</button>
+      <h3 id="serviceModalTitle" class="modal-title">Thêm Dịch Vụ Mới</h3>
+      <form onsubmit="handleServiceFormSubmit(event)">
+        <input type="hidden" id="srvId">
+        <div style="margin-bottom: 14px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 6px;">Tên Dịch Vụ</label>
+          <input type="text" id="srvName" class="form-control" placeholder="Tên dịch vụ..." required style="padding-left: 16px;">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+          <div>
+            <label style="font-weight: 600; display: block; margin-bottom: 6px;">Danh Mục</label>
+            <select id="srvCategory" class="form-select" style="width: 100%;">
+              <option value="Spa & Grooming">Spa & Grooming</option>
+              <option value="Khám Sức Khỏe">Khám Sức Khỏe</option>
+              <option value="Khách Sạn Thú Cưng">Khách Sạn Thú Cưng</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-weight: 600; display: block; margin-bottom: 6px;">Giá Dịch Vụ (VNĐ)</label>
+            <input type="number" id="srvPrice" class="form-control" placeholder="250000" required style="padding-left: 16px;">
+          </div>
+        </div>
+        <div style="margin-bottom: 14px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 6px;">Thời Gian Thực Hiện (Phút)</label>
+          <input type="number" id="srvDuration" class="form-control" value="45" style="padding-left: 16px;">
+        </div>
+        <div style="margin-bottom: 14px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 6px;">Link Hình Ảnh (URL)</label>
+          <input type="text" id="srvImage" class="form-control" placeholder="https://..." style="padding-left: 16px;">
+        </div>
+        <div style="margin-bottom: 20px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 6px;">Mô Tả Chi Tiết</label>
+          <textarea id="srvDesc" class="form-control" rows="3" placeholder="Mô tả chi tiết gói dịch vụ..." style="padding-left: 16px; border-radius: var(--radius-md);"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Lưu Dịch Vụ</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Login Modal -->
+  <div id="loginModal" class="modal-overlay">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeModal('loginModal')">&times;</button>
+      <h3 class="modal-title">Đăng Nhập Tài Khoản</h3>
+      <form onsubmit="handleLogin(event)">
+        <div style="margin-bottom: 16px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 6px;">Email</label>
+          <input type="email" id="loginEmail" class="form-control" placeholder="example@petcare.com" required style="padding-left: 16px;">
+        </div>
+        <div style="margin-bottom: 20px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 6px;">Mật Khẩu</label>
+          <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required style="padding-left: 16px;">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-bottom: 16px;">Đăng Nhập</button>
+      </form>
+
+      <div style="text-align: center; margin: 16px 0; color: var(--text-muted); font-size: 0.85rem;">Hoặc đăng nhập bằng OAuth2 (Google)</div>
+
+      <!-- Google Official OAuth2 Button Container -->
+      <div id="googleBtnContainer" style="display: flex; justify-content: center; width: 100%; margin-bottom: 10px;"></div>
+
+      <!-- Fallback / Demo OAuth2 Button -->
+      <button id="demoOAuthBtn" type="button" class="btn btn-secondary" style="width: 100%;" onclick="handleOAuth2Login('Google')">
+        <i class="fab fa-google" style="color: #ea4335;"></i> Đăng Nhập Mẫu Với Google (Demo Mode)
+      </button>
+
+
+      <p style="text-align: center; margin-top: 16px; font-size: 0.85rem;">
+        Chưa có tài khoản? <a href="#" onclick="closeModal('loginModal'); openModal('registerModal');">Đăng ký ngay</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- Register Modal -->
+  <div id="registerModal" class="modal-overlay">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeModal('registerModal')">&times;</button>
+      <h3 class="modal-title">Đăng Ký Tài Khoản Mới</h3>
+      <form onsubmit="handleRegister(event)">
+        <div style="margin-bottom: 14px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 6px;">Họ và Tên</label>
+          <input type="text" id="regFullName" class="form-control" placeholder="Nguyễn Văn A" required style="padding-left: 16px;">
+        </div>
+        <div style="margin-bottom: 14px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 6px;">Email</label>
+          <input type="email" id="regEmail" class="form-control" placeholder="example@gmail.com" required style="padding-left: 16px;">
+        </div>
+        <div style="margin-bottom: 14px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 6px;">Số Điện Thoại</label>
+          <input type="tel" id="regPhone" class="form-control" placeholder="0901234567" style="padding-left: 16px;">
+        </div>
+        <div style="margin-bottom: 20px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 6px;">Mật Khẩu</label>
+          <input type="password" id="regPassword" class="form-control" placeholder="••••••••" required style="padding-left: 16px;">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Tạo Tài Khoản</button>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- Booking Modal -->
+  <div id="bookingModal" class="modal-overlay">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeModal('bookingModal')">&times;</button>
+      <h3 class="modal-title">Đặt Lịch Chăm Sóc Thú Cưng</h3>
+      <form onsubmit="handleBookingSubmit(event)">
+        <div style="margin-bottom: 14px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 6px;">Chọn Thú Cưng</label>
+          <select id="bookingPetSelect" class="form-select" style="width: 100%;"></select>
+        </div>
+        <div style="margin-bottom: 14px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 6px;">Chọn Dịch Vụ</label>
+          <select id="bookingServiceSelect" class="form-select" style="width: 100%;" required></select>
+        </div>
+        <div style="margin-bottom: 14px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 6px;">Ngày & Giờ Hẹn</label>
+          <input type="datetime-local" id="bookingDate" class="form-control" required style="padding-left: 16px;">
+        </div>
+        <div style="margin-bottom: 20px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 6px;">Ghi Chú Thêm</label>
+          <textarea id="bookingNotes" class="form-control" rows="2" placeholder="Ghi chú về thói quen, dị ứng của thú cưng..." style="padding-left: 16px; border-radius: var(--radius-md);"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Xác Nhận Đặt Lịch</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Shopping Cart Modal -->
+  <div id="cartModal" class="modal-overlay">
+
+    <div class="modal-card" style="max-width: 620px; width: 95%;">
+      <button class="modal-close" onclick="closeModal('cartModal')">&times;</button>
+      <h3 class="modal-title"><i class="fas fa-shopping-cart" style="color: var(--primary);"></i> Giỏ Hàng Của Bạn</h3>
+      
+      <div id="cartItemsList" style="max-height: 380px; overflow-y: auto; margin-bottom: 20px; padding-right: 6px;">
+        <!-- Cart items populated by JS -->
+      </div>
+
+      <div id="cartFooter" style="border-top: 1px solid var(--border-glass); padding-top: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <span style="font-size: 1.1rem; font-weight: 700;">Tổng Tiền Thanh Toán:</span>
+          <span id="cartTotalPrice" style="font-size: 1.3rem; font-weight: 800; color: var(--primary);">0 đ</span>
+        </div>
+        <div style="display: flex; gap: 12px;">
+          <button class="btn btn-secondary btn-sm" onclick="clearCart()" style="flex: 1;"><i class="fas fa-trash-alt"></i> Xóa Tất Cả</button>
+          <button class="btn btn-primary" onclick="openCheckoutModal()" style="flex: 2;"><i class="fas fa-credit-card"></i> Tiến Hành Thanh Toán</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Checkout Modal -->
+  <div id="checkoutModal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 500px; width: 95%;">
+      <button class="modal-close" onclick="closeModal('checkoutModal')">&times;</button>
+      <h3 class="modal-title"><i class="fas fa-receipt" style="color: var(--primary);"></i> Xác Nhận Thanh Toán</h3>
+      <form onsubmit="handleCheckoutSubmit(event)">
+        <div style="margin-bottom: 14px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 6px;">Họ và Tên Người Nhận</label>
+          <input type="text" id="checkoutName" class="form-control" required style="padding-left: 16px;">
+        </div>
+        <div style="margin-bottom: 14px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 6px;">Số Điện Thoại Nhận Hàng</label>
+          <input type="tel" id="checkoutPhone" class="form-control" placeholder="0901234567" required style="padding-left: 16px;">
+        </div>
+        <div style="margin-bottom: 14px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 6px;">Địa Chỉ Giao Hàng</label>
+          <input type="text" id="checkoutAddress" class="form-control" placeholder="123 Nguyễn Trãi, TP. Hà Nội" required style="padding-left: 16px;">
+        </div>
+        <div style="margin-bottom: 20px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 6px;">Phương Thức Thanh Toán</label>
+          <select id="checkoutPaymentMethod" class="form-select" style="width: 100%;">
+            <option value="COD">Thanh toán khi nhận hàng (COD)</option>
+            <option value="BANK">Chuyển khoản Ngân Hàng / Chuyển khoản QR Code</option>
+          </select>
+        </div>
+        <div style="background: var(--primary-light); padding: 14px; border-radius: var(--radius-md); margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; font-weight: 700;">
+            <span>Tổng Tiền Đơn Hàng:</span>
+            <span id="checkoutTotalAmount" style="color: var(--primary); font-size: 1.1rem;">0 đ</span>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Xác Nhận Đặt Hàng <i class="fas fa-check-circle"></i></button>
+      </form>
+    </div>
+  </div>
+
+  <!-- My Appointments History Modal -->
+  <div id="myAppointmentsModal" class="modal-overlay">
+
+    <div class="modal-card" style="max-width: 680px; width: 95%;">
+      <button class="modal-close" onclick="closeModal('myAppointmentsModal')">&times;</button>
+      <h3 class="modal-title"><i class="far fa-calendar-alt" style="color: var(--primary);"></i> Lịch Sử Đặt Lịch Chăm Sóc Thú Cưng</h3>
+      
+      <div id="myAppointmentsList" style="max-height: 420px; overflow-y: auto; padding-right: 4px;">
+        <!-- Appointments populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+
+
+  <script>
+    async function handleContactSubmit(e) {
+      e.preventDefault();
+      const name = document.getElementById('contactName').value;
+      const email = document.getElementById('contactEmail').value;
+      const message = document.getElementById('contactMessage').value;
+
+      try {
+        const res = await fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, subject: 'Liên Hệ Đồ Án', message })
+        });
+        if (res.ok) {
+          showToast('Đã gửi tin nhắn liên hệ thành công!');
+          e.target.reset();
+        }
+      } catch (err) {
+        showToast('Gửi tin nhắn thất bại', 'danger');
+      }
+    }
+  </script>
+</body>
+</html>

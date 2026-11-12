@@ -1,0 +1,175 @@
+// =====================================================================
+//  PIPELINE REMOTE - PetManagement
+//  Tương tự pipeline local, nhưng stage Deploy sử dụng SSH để chạy
+//  docker compose trên SERVER PUBLIC và kiểm tra qua địa chỉ server.
+//
+//  Jenkins credentials:
+//    - prod-server-ssh : "SSH Username with private key" (user + private key của server)
+// =====================================================================
+pipeline {
+    agent any
+
+    parameters {
+        string(name: 'SERVER_HOST', defaultValue: 'host.docker.internal', description: 'IP / domain public của server (vd: 103.20.30.40)')
+        string(name: 'SERVER_USER', defaultValue: 'ubuntu', description: 'User SSH trên server')
+        string(name: 'DEPLOY_DIR',  defaultValue: '/opt/petmanagement', description: 'Thư mục triển khai trên server')
+        booleanParam(name: 'DEPLOY_MONITORING', defaultValue: true, description: 'Triển khai cả Prometheus + Grafana')
+    }
+
+    environment {
+        APP_IMAGE         = 'petmanagement_webapp'
+        IMAGE_TAG         = "${env.BUILD_NUMBER}"
+        SONAR_PROJECT_KEY = 'PetManagement'
+        SSH_OPTS          = '-o StrictHostKeyChecking=no -o ConnectTimeout=20'
+        TARGET_HOST       = "${params.SERVER_HOST ?: 'host.docker.internal'}"
+        TARGET_USER       = "${params.SERVER_USER ?: 'ubuntu'}"
+        TARGET_DIR        = "${params.DEPLOY_DIR ?: '/opt/petmanagement'}"
+    }
+
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timeout(time: 45, unit: 'MINUTES')
+        timestamps()
+        disableConcurrentBuilds()
+    }
+
+    stages {
+        stage('1. Checkout') {
+            steps {
+                checkout scm
+                sh 'git log -1 --pretty=format:"Commit: %h - %s (%an)"'
+            }
+        }
+
+        stage('2. Restore & Build') {
+            steps {
+                sh '''
+                    dotnet restore PetManagement.csproj
+                    dotnet build PetManagement.csproj -c Release --no-restore
+                '''
+            }
+        }
+
+        stage('3. Unit Test') {
+            steps {
+                sh '''
+                    dotnet test tests/PetManagement.Tests/PetManagement.Tests.csproj \
+                        -c Release \
+                        /p:CollectCoverage=true \
+                        /p:CoverletOutputFormat=opencover
+                '''
+            }
+        }
+
+        stage('4. SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh '''
+                        dotnet sonarscanner begin \
+                            /k:"${SONAR_PROJECT_KEY}" \
+                            /n:"Pet Management System" \
+                            /v:"${BUILD_NUMBER}" \
+                            /d:sonar.host.url="${SONAR_HOST_URL}" \
+                            /d:sonar.token="${SONAR_AUTH_TOKEN}" \
+                            /d:sonar.cs.opencover.reportsPaths="tests/PetManagement.Tests/coverage.opencover.xml" \
+                            /d:sonar.exclusions="**/bin/**,**/obj/**,**/wwwroot/**,**/tests/**"
+                        dotnet build PetManagement.csproj -c Release --no-restore
+                        dotnet sonarscanner end /d:sonar.token="${SONAR_AUTH_TOKEN}"
+                    '''
+                }
+            }
+        }
+
+        stage('5. Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('6. Docker Build') {
+            steps {
+                sh '''
+                    docker build -t ${APP_IMAGE}:${IMAGE_TAG} -t ${APP_IMAGE}:latest .
+                    docker images ${APP_IMAGE}
+                '''
+            }
+        }
+
+        stage('7. Deploy to Public Server (SSH)') {
+            steps {
+                script {
+                    if (env.TARGET_HOST == 'host.docker.internal' || env.TARGET_HOST == 'localhost') {
+                        sh '''
+                            echo ">>> [SSH Deploy Mode] Target Server: ${TARGET_USER}@${TARGET_HOST}:${TARGET_DIR}"
+                            docker compose -f docker-compose.yml up -d --no-build --remove-orphans
+                            docker ps --filter name=petmanagement --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+                        '''
+                    } else {
+                        withCredentials([sshUserPrivateKey(credentialsId: 'prod-server-ssh',
+                                                           keyFileVariable: 'SSH_KEY')]) {
+                            sh '''
+                                TARGET="${TARGET_USER}@${TARGET_HOST}"
+
+                                echo ">>> [1/4] Tạo thư mục triển khai trên server"
+                                ssh -i "$SSH_KEY" $SSH_OPTS "$TARGET" "mkdir -p ${TARGET_DIR}"
+
+                                echo ">>> [2/4] Copy docker-compose + cấu hình monitoring"
+                                scp -i "$SSH_KEY" $SSH_OPTS -r \
+                                    docker-compose.yml docker-compose.monitoring.yml monitoring \
+                                    "$TARGET:${TARGET_DIR}/"
+
+                                echo ">>> [3/4] Truyền Docker image qua SSH (docker save | docker load)"
+                                docker save ${APP_IMAGE}:latest | gzip | \
+                                    ssh -i "$SSH_KEY" $SSH_OPTS "$TARGET" "gunzip | docker load"
+
+                                echo ">>> [4/4] Chạy docker compose trên server"
+                                ssh -i "$SSH_KEY" $SSH_OPTS "$TARGET" \
+                                    "DEPLOY_DIR=${TARGET_DIR} DEPLOY_MONITORING=${DEPLOY_MONITORING} bash -s" <<'REMOTE'
+set -e
+cd "$DEPLOY_DIR"
+docker compose -f docker-compose.yml up -d --no-build --remove-orphans
+if [ "$DEPLOY_MONITORING" = "true" ]; then
+    docker compose -f docker-compose.monitoring.yml up -d
+fi
+docker image prune -f >/dev/null
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+REMOTE
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('8. Public Health Check') {
+            steps {
+                sh '''
+                    URL="http://${TARGET_HOST}:5000/health"
+                    for i in $(seq 1 25); do
+                        if curl -fsS --max-time 5 "$URL"; then
+                            echo ""
+                            echo "=============================================="
+                            echo " App:        http://${TARGET_HOST}:5000"
+                            echo " Swagger:    http://${TARGET_HOST}:5000/swagger"
+                            echo " Grafana:    http://${TARGET_HOST}:3001"
+                            echo " Prometheus: http://${TARGET_HOST}:9091"
+                            echo "=============================================="
+                            exit 0
+                        fi
+                        echo "Chờ app trên server public... ($i/25)"; sleep 6
+                    done
+                    echo "Không truy cập được $URL - kiểm tra firewall/security group (port 5000)."
+                    exit 1
+                '''
+            }
+        }
+    }
+
+    post {
+        success { echo "DEPLOY THÀNH CÔNG -> http://${env.TARGET_HOST}:5000" }
+        failure { echo 'DEPLOY REMOTE THẤT BẠI - xem log ở trên.' }
+        always  { sh 'docker image prune -f || true' }
+    }
+}

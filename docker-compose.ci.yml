@@ -1,0 +1,74 @@
+﻿name: petmanagement-ci
+
+services:
+  jenkins:
+    build:
+      context: ./ci/jenkins
+      dockerfile: Dockerfile
+    image: petmanagement_jenkins:latest
+    container_name: petmanagement_jenkins
+    user: root
+    ports:
+      - "8090:8080"     # Jenkins UI  -> http://localhost:8090
+      - "50000:50000"   # Jenkins agent
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Repo Git local (dùng URL file:///project-src trong Jenkins job khi chưa có GitHub)
+      - ./:/project-src:ro
+    environment:
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false -Dhudson.plugins.git.GitSCM.ALLOW_LOCAL_CHECKOUT=true
+    networks:
+      - petnet
+    restart: always
+
+  sonarqube:
+    image: sonarqube:community
+    container_name: petmanagement_sonarqube
+    depends_on:
+      sonar_db:
+        condition: service_healthy
+    environment:
+      - SONAR_JDBC_URL=jdbc:postgresql://sonar_db:5432/sonarqube
+      - SONAR_JDBC_USERNAME=sonar
+      - SONAR_JDBC_PASSWORD=sonar
+      - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
+    ports:
+      - "9000:9000"     # SonarQube UI -> http://localhost:9000
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    networks:
+      - petnet
+    restart: always
+
+  sonar_db:
+    image: postgres:15
+    container_name: petmanagement_sonar_db
+    environment:
+      - POSTGRES_USER=sonar
+      - POSTGRES_PASSWORD=sonar
+      - POSTGRES_DB=sonarqube
+    volumes:
+      - postgresql_data:/var/lib/postgresql/data
+    networks:
+      - petnet
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sonar -d sonarqube"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  jenkins_home:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
+  postgresql_data:
+
+networks:
+  petnet:
+    name: petnet
+

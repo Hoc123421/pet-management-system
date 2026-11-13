@@ -22,12 +22,10 @@ Write-Host "[3/3] Prometheus + Grafana + Node Exporter + cAdvisor" -ForegroundCo
 docker compose -f docker-compose.monitoring.yml up -d
 
 Write-Host ""
-Write-Host "Jenkins    : http://localhost:8090" -ForegroundColor Green
-Write-Host "SonarQube  : http://localhost:9000  (admin/admin)" -ForegroundColor Green
-Write-Host "App        : http://localhost:5000" -ForegroundColor Green
-Write-Host "Grafana    : http://localhost:3001  (admin/admin123)" -ForegroundColor Green
-Write-Host "Prometheus : http://localhost:9091" -ForegroundColor Green
+Write-Host "Jenkins    : http://localhost:8090/view/all/  (admin / admin123)" -ForegroundColor Green
+Write-Host "SonarQube  : http://localhost:9000/dashboard?id=PetManagement&codeScope=overall  (admin / Admin@123456)" -ForegroundColor Green
+Write-Host "App        : http://localhost:5000  (admin@petcare.com / admin123)" -ForegroundColor Green
+Write-Host "Swagger    : http://localhost:5000/swagger" -ForegroundColor Green
+Write-Host "Grafana    : http://localhost:3001/d/petmanagement-overview/petmanagement-tong-quan-he-thong  (admin / admin123)" -ForegroundColor Green
+Write-Host "Prometheus : http://localhost:9091/targets" -ForegroundColor Green
 Write-Host "cAdvisor   : http://localhost:8082" -ForegroundColor Green
-Write-Host ""
-Write-Host "Mat khau Jenkins lan dau:" -ForegroundColor Cyan
-Write-Host "  docker exec petmanagement_jenkins cat /var/jenkins_home/secrets/initialAdminPassword"

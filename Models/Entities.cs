@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace PetManagement.Models
 {
@@ -16,7 +17,9 @@ namespace PetManagement.Models
         public string OAuthProvider { get; set; } = "Local"; // Local, Google
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        [JsonIgnore]
         public ICollection<Pet> Pets { get; set; } = new List<Pet>();
+        [JsonIgnore]
         public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
     }
 
@@ -32,9 +35,11 @@ namespace PetManagement.Models
         public string HealthNotes { get; set; } = string.Empty;
         public string ImageUrl { get; set; } = string.Empty;
         public int OwnerId { get; set; }
+        [JsonIgnore]
         public User? Owner { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        [JsonIgnore]
         public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
     }
 

@@ -232,6 +232,63 @@ namespace PetManagement.Controllers
             return Ok(MapToUserDto(user));
         }
 
+        [HttpPost("sync")]
+        public async Task<IActionResult> SyncSession([FromBody] UserDto dto)
+        {
+            if (dto == null || (dto.Id <= 0 && string.IsNullOrWhiteSpace(dto.Email)))
+            {
+                return BadRequest(new { message = "Dữ liệu phiên người dùng không hợp lệ!" });
+            }
+
+            User? user = null;
+            if (!string.IsNullOrWhiteSpace(dto.Email))
+            {
+                user = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == dto.Email.ToLower());
+            }
+            if (user == null && dto.Id > 0)
+            {
+                user = await _context.Users.FindAsync(dto.Id);
+                if (user == null)
+                {
+                    user = await _context.Users
+                        .Where(u => u.PasswordHash == "SYNCED_SESSION_USER")
+                        .OrderByDescending(u => u.Id)
+                        .FirstOrDefaultAsync();
+                }
+
+                if (user != null && user.PasswordHash == "SYNCED_SESSION_USER")
+                {
+                    if (!string.IsNullOrWhiteSpace(dto.FullName)) user.FullName = dto.FullName;
+                    if (!string.IsNullOrWhiteSpace(dto.Email)) user.Email = dto.Email;
+                    if (!string.IsNullOrWhiteSpace(dto.Role)) user.Role = dto.Role;
+                    if (!string.IsNullOrWhiteSpace(dto.AvatarUrl)) user.AvatarUrl = dto.AvatarUrl;
+                    await _context.SaveChangesAsync();
+                }
+            }
+
+            if (user == null)
+            {
+                user = new User
+                {
+                    FullName = string.IsNullOrWhiteSpace(dto.FullName) ? "Khách Hàng" : dto.FullName,
+                    Email = string.IsNullOrWhiteSpace(dto.Email) ? $"user_{Guid.NewGuid():N}@petcare.com" : dto.Email,
+                    PasswordHash = "SYNCED_SESSION_USER",
+                    Role = string.IsNullOrWhiteSpace(dto.Role) ? "Customer" : dto.Role,
+                    Phone = dto.Phone ?? string.Empty,
+                    Address = dto.Address ?? string.Empty,
+                    AvatarUrl = string.IsNullOrWhiteSpace(dto.AvatarUrl)
+                        ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop"
+                        : dto.AvatarUrl,
+                    OAuthProvider = string.IsNullOrWhiteSpace(dto.OAuthProvider) ? "Local" : dto.OAuthProvider,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok(MapToUserDto(user));
+        }
+
         [HttpPost("logout")]
         public IActionResult Logout()
         {

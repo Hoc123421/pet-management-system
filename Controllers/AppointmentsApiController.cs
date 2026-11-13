@@ -73,6 +73,11 @@ namespace PetManagement.Controllers
                 return BadRequest(new { message = "Thú cưng hoặc Dịch vụ không tồn tại!" });
             }
 
+            if (customerId <= 0 || !await _context.Users.AnyAsync(u => u.Id == customerId))
+            {
+                customerId = pet.OwnerId;
+            }
+
             var appointment = new Appointment
             {
                 PetId = dto.PetId,

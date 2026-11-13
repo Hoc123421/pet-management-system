@@ -38,16 +38,14 @@ const state = {
 };
 
 // Initialize Application
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initTheme();
   updateAuthUI();
   setupEventListeners();
   initGoogleOAuth();
+  await syncUserSession();
   loadUserCart();
 
-
-
-  
   // Initial Data Loads
   loadPets();
   loadServices();
@@ -59,6 +57,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 });
+
+async function syncUserSession() {
+  if (!state.currentUser) return;
+  try {
+    const res = await fetch(`${API_BASE}/auth/sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(state.currentUser)
+    });
+    if (res.ok) {
+      const syncedUser = await res.json();
+      state.currentUser = syncedUser;
+      localStorage.setItem('currentUser', JSON.stringify(syncedUser));
+      updateAuthUI();
+    }
+  } catch (err) {
+    console.warn('Sync session warning:', err);
+  }
+}
 
 /* ==========================================================================
    THEME SWITCHER
@@ -495,17 +512,21 @@ async function openPetModal(id = null) {
 
 async function handlePetFormSubmit(e) {
   e.preventDefault();
+  if (state.currentUser) {
+    await syncUserSession();
+  }
   const id = document.getElementById('editPetId').value;
+  const weightRaw = String(document.getElementById('addPetWeight').value || '3.5').replace(',', '.');
   const pet = {
     name: document.getElementById('addPetName').value,
     species: document.getElementById('addPetSpecies').value,
     breed: document.getElementById('addPetBreed').value,
     ageYears: parseInt(document.getElementById('addPetAge').value) || 1,
-    weightKg: parseFloat(document.getElementById('addPetWeight').value) || 3.5,
+    weightKg: parseFloat(weightRaw) || 3.5,
     gender: document.getElementById('addPetGender').value,
     imageUrl: document.getElementById('addPetImage').value,
     healthNotes: document.getElementById('addPetNotes').value,
-    ownerId: state.currentUser ? state.currentUser.id : 1
+    ownerId: state.currentUser ? state.currentUser.id : 2
   };
 
   try {
@@ -524,6 +545,9 @@ async function handlePetFormSubmit(e) {
       loadPets();
       loadAdminPetsTable();
       loadAdminDashboard();
+    } else {
+      const errData = await res.json().catch(() => ({}));
+      showToast(errData.message || 'Không thể lưu hồ sơ thú cưng!', 'danger');
     }
   } catch (err) {
     showToast('Thao tác thất bại!', 'danger');

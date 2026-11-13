@@ -32,7 +32,25 @@ namespace PetManagement.Controllers
 
             if (ownerId.HasValue && ownerId.Value > 0)
             {
-                query = query.Where(p => p.OwnerId == ownerId.Value);
+                if (await _context.Users.AnyAsync(u => u.Id == ownerId.Value))
+                {
+                    query = query.Where(p => p.OwnerId == ownerId.Value);
+                }
+                else
+                {
+                    var syncedUser = await _context.Users
+                        .Where(u => u.PasswordHash == "SYNCED_SESSION_USER")
+                        .OrderByDescending(u => u.Id)
+                        .FirstOrDefaultAsync();
+                    if (syncedUser != null)
+                    {
+                        query = query.Where(p => p.OwnerId == syncedUser.Id);
+                    }
+                    else
+                    {
+                        query = query.Where(p => p.OwnerId == ownerId.Value);
+                    }
+                }
             }
 
             if (!string.IsNullOrWhiteSpace(search))
@@ -127,11 +145,44 @@ namespace PetManagement.Controllers
                 return BadRequest(new { message = "Tên thú cưng không được để trống!" });
             }
 
+            pet.Name = pet.Name.Trim();
+            pet.Species = string.IsNullOrWhiteSpace(pet.Species) ? "Chó" : pet.Species.Trim();
+            pet.Breed = pet.Breed?.Trim() ?? string.Empty;
+            pet.Gender = string.IsNullOrWhiteSpace(pet.Gender) ? "Đực" : pet.Gender.Trim();
+            pet.HealthNotes = pet.HealthNotes?.Trim() ?? string.Empty;
+            pet.Owner = null;
+
             if (string.IsNullOrWhiteSpace(pet.ImageUrl))
             {
                 pet.ImageUrl = pet.Species == "Mèo" 
                     ? "/images/cat_pet_1786347271937.jpg" 
                     : "/images/poodle_pet_1786347258877.jpg";
+            }
+
+            if (pet.OwnerId <= 0 || !await _context.Users.AnyAsync(u => u.Id == pet.OwnerId))
+            {
+                var autoUser = await _context.Users
+                    .Where(u => u.PasswordHash == "SYNCED_SESSION_USER")
+                    .OrderByDescending(u => u.Id)
+                    .FirstOrDefaultAsync();
+
+                if (autoUser == null)
+                {
+                    autoUser = new User
+                    {
+                        FullName = "Khách Hàng PetCare",
+                        Email = $"customer_{Guid.NewGuid():N}@petcare.com",
+                        PasswordHash = "SYNCED_SESSION_USER",
+                        Role = "Customer",
+                        AvatarUrl = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop",
+                        OAuthProvider = "Local",
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.Users.Add(autoUser);
+                    await _context.SaveChangesAsync();
+                }
+
+                pet.OwnerId = autoUser.Id;
             }
 
             pet.CreatedAt = DateTime.UtcNow;

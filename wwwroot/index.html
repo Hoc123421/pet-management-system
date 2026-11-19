@@ -141,6 +141,9 @@
             <button class="btn btn-primary btn-sm" onclick="openPetModal()">
               <i class="fas fa-plus"></i> Thêm Thú Cưng
             </button>
+            <button class="btn btn-secondary btn-sm" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.35);" onclick="deleteCustomPets()" title="Xóa toàn bộ các hồ sơ thú cưng đã nhập thêm">
+              <i class="fas fa-trash-alt"></i> Xóa Pet Đã Nhập
+            </button>
           </div>
         </div>
 
@@ -277,9 +280,12 @@
       <!-- Sub Tab 1: Pets CRUD Table -->
       <div id="adminTabPets" class="admin-tab-content">
         <div class="data-table-container">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
             <h3 style="font-size: 1.2rem; font-weight: 800;">Danh Sách Hồ Sơ Thú Cưng (CRUD)</h3>
-            <button class="btn btn-primary btn-sm" onclick="openPetModal()"><i class="fas fa-plus"></i> Thêm Thú Cưng Mới</button>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button class="btn btn-secondary btn-sm" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.35);" onclick="deleteCustomPets()"><i class="fas fa-trash-alt"></i> Xóa Tất Cả Pet Đã Nhập</button>
+              <button class="btn btn-primary btn-sm" onclick="openPetModal()"><i class="fas fa-plus"></i> Thêm Thú Cưng Mới</button>
+            </div>
           </div>
           <table class="data-table">
             <thead>
@@ -430,7 +436,10 @@
           <label style="font-weight: 600; display: block; margin-bottom: 6px;">Ghi Chú Sức Khỏe</label>
           <textarea id="addPetNotes" class="form-control" rows="2" placeholder="Tình trạng tiêm vắc-xin, ăn uống..." style="padding-left: 16px; border-radius: var(--radius-md);"></textarea>
         </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%;">Lưu Hồ Sơ Thú Cưng</button>
+        <div style="display: flex; gap: 10px;">
+          <button type="submit" class="btn btn-primary" style="flex: 1;">Lưu Hồ Sơ Thú Cưng</button>
+          <button type="button" id="deletePetModalBtn" class="btn btn-secondary" style="display: none; color: var(--danger); border-color: rgba(239, 68, 68, 0.4);" onclick="deletePetFromModal()"><i class="fas fa-trash-alt"></i> Xóa Hồ Sơ</button>
+        </div>
       </form>
     </div>
   </div>

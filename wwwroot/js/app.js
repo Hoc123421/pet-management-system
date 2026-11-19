@@ -465,9 +465,14 @@ function renderPetsGrid(pets) {
         <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px; flex: 1;">${pet.healthNotes || 'Sức khỏe tốt, đã tiêm phòng đầy đủ.'}</p>
         <div class="pet-card-footer">
           <button class="btn btn-primary btn-sm" style="flex: 1;" onclick="openBookingModal(${pet.id}, '${pet.name.replace(/'/g, "\\'")}')">
-            <i class="far fa-calendar-check"></i> Đặt Lịch Chăm Sóc
+            <i class="far fa-calendar-check"></i> Đặt Lịch
           </button>
-          ${(state.currentUser && (state.currentUser.role === 'Admin' || pet.ownerId === state.currentUser.id)) ? `<button class="btn btn-secondary btn-sm" onclick="openPetModal(${pet.id})"><i class="fas fa-edit"></i> Sửa</button>` : ''}
+          <button class="btn btn-secondary btn-sm" onclick="openPetModal(${pet.id})" title="Chỉnh sửa hồ sơ">
+            <i class="fas fa-edit"></i> Sửa
+          </button>
+          <button class="btn btn-secondary btn-sm" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.35);" onclick="deletePet(${pet.id}, '${pet.name.replace(/'/g, "\\'")}')" title="Xóa thú cưng này">
+            <i class="fas fa-trash-alt"></i> Xóa
+          </button>
         </div>
       </div>
     </div>
@@ -477,7 +482,11 @@ function renderPetsGrid(pets) {
 
 async function openPetModal(id = null) {
   const title = document.getElementById('petModalTitle');
+  const deleteBtn = document.getElementById('deletePetModalBtn');
   document.getElementById('editPetId').value = id || '';
+  if (deleteBtn) {
+    deleteBtn.style.display = id ? 'inline-flex' : 'none';
+  }
 
   if (id) {
     title.textContent = 'Chỉnh Sửa Hồ Sơ Thú Cưng';
@@ -1060,7 +1069,7 @@ async function loadAdminPetsTable() {
         <td><span class="badge badge-info"><i class="fas fa-user"></i> ${p.ownerName}</span></td>
         <td>
           <button class="btn btn-secondary btn-sm" onclick="openPetModal(${p.id})"><i class="fas fa-edit"></i> Sửa</button>
-          <button class="btn btn-secondary btn-sm" onclick="deletePet(${p.id})"><i class="fas fa-trash" style="color: var(--danger);"></i> Xóa</button>
+          <button class="btn btn-secondary btn-sm" onclick="deletePet(${p.id}, '${p.name.replace(/'/g, "\\'")}')"><i class="fas fa-trash" style="color: var(--danger);"></i> Xóa</button>
         </td>
       </tr>
     `).join('');
@@ -1069,18 +1078,54 @@ async function loadAdminPetsTable() {
   }
 }
 
-async function deletePet(id) {
-  if (!confirm('Bạn có chắc chắn muốn xóa thú cưng này?')) return;
+async function deletePet(id, petName = '') {
+  const confirmMsg = petName
+    ? `Bạn có chắc chắn muốn xóa hồ sơ thú cưng "${petName}" khỏi dữ liệu hệ thống?`
+    : 'Bạn có chắc chắn muốn xóa thú cưng này?';
+  if (!confirm(confirmMsg)) return;
   try {
     const res = await fetch(`${API_BASE}/pets/${id}`, { method: 'DELETE' });
+    const data = await res.json().catch(() => ({}));
     if (res.ok) {
-      showToast('Đã xóa thú cưng thành công!');
-      loadAdminPetsTable();
+      closeModal('addPetModal');
+      showToast(data.message || 'Đã xóa thú cưng thành công!');
       loadPets();
+      loadAdminPetsTable();
       loadAdminDashboard();
+    } else {
+      showToast(data.message || 'Xóa thú cưng thất bại!', 'danger');
     }
   } catch (err) {
-    showToast('Xóa thất bại', 'danger');
+    showToast('Xóa thất bại!', 'danger');
+  }
+}
+
+async function deletePetFromModal() {
+  const id = document.getElementById('editPetId')?.value;
+  const name = document.getElementById('addPetName')?.value || '';
+  if (!id) return;
+  await deletePet(id, name);
+}
+
+async function deleteCustomPets() {
+  if (!confirm('Bạn có chắc chắn muốn xóa toàn bộ các hồ sơ thú cưng đã nhập thêm vào dữ liệu? (4 thú cưng mẫu ban đầu sẽ được giữ lại)')) return;
+  try {
+    const ownerQuery = (state.currentUser && state.currentUser.role !== 'Admin')
+      ? `?ownerId=${state.currentUser.id}`
+      : '';
+    const res = await fetch(`${API_BASE}/pets/custom${ownerQuery}`, { method: 'DELETE' });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) {
+      showToast(data.message || 'Đã xóa các thú cưng đã nhập!', data.deletedCount > 0 ? 'success' : 'info');
+      state.pets.page = 1;
+      loadPets();
+      loadAdminPetsTable();
+      loadAdminDashboard();
+    } else {
+      showToast(data.message || 'Không thể xóa dữ liệu thú cưng!', 'danger');
+    }
+  } catch (err) {
+    showToast('Thao tác xóa thất bại!', 'danger');
   }
 }
 

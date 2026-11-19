@@ -220,10 +220,46 @@ namespace PetManagement.Controllers
             var pet = await _context.Pets.FindAsync(id);
             if (pet == null) return NotFound(new { message = "Không tìm thấy thú cưng cần xóa!" });
 
+            var relatedAppointments = await _context.Appointments
+                .Where(a => a.PetId == id)
+                .ToListAsync();
+            if (relatedAppointments.Any())
+            {
+                _context.Appointments.RemoveRange(relatedAppointments);
+            }
+
             _context.Pets.Remove(pet);
             await _context.SaveChangesAsync();
 
             return Ok(new { message = $"Đã xóa thú cưng '{pet.Name}' thành công!" });
+        }
+
+        [HttpDelete("custom")]
+        public async Task<IActionResult> DeleteCustomPets()
+        {
+            var petsToDelete = await _context.Pets.Where(p => p.Id > 4).ToListAsync();
+            if (!petsToDelete.Any())
+            {
+                return Ok(new { deletedCount = 0, message = "Không có hồ sơ thú cưng mới nhập nào để xóa!" });
+            }
+
+            var petIds = petsToDelete.Select(p => p.Id).ToList();
+            var relatedAppointments = await _context.Appointments
+                .Where(a => petIds.Contains(a.PetId))
+                .ToListAsync();
+            if (relatedAppointments.Any())
+            {
+                _context.Appointments.RemoveRange(relatedAppointments);
+            }
+
+            _context.Pets.RemoveRange(petsToDelete);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                deletedCount = petsToDelete.Count,
+                message = $"Đã xóa toàn bộ {petsToDelete.Count} hồ sơ thú cưng đã nhập thành công!"
+            });
         }
     }
 }

@@ -35,6 +35,24 @@ string connectionString = builder.Configuration.GetConnectionString("DefaultConn
 
 bool useInMemory = builder.Configuration.GetValue<bool>("UseInMemoryDatabase", false);
 
+if (!useInMemory)
+{
+    try
+    {
+        var csBuilder = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(connectionString)
+        {
+            ConnectTimeout = 3
+        };
+        using var testConn = new Microsoft.Data.SqlClient.SqlConnection(csBuilder.ConnectionString);
+        testConn.Open();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"SQL Server unreachable ({ex.Message}). Automatically switching to InMemory database...");
+        useInMemory = true;
+    }
+}
+
 builder.Services.AddDbContext<PetDbContext>(options =>
 {
     if (useInMemory)
@@ -43,20 +61,13 @@ builder.Services.AddDbContext<PetDbContext>(options =>
     }
     else
     {
-        try
+        options.UseSqlServer(connectionString, sqlOptions =>
         {
-            options.UseSqlServer(connectionString, sqlOptions =>
-            {
-                sqlOptions.EnableRetryOnFailure(
-                    maxRetryCount: 5,
-                    maxRetryDelay: TimeSpan.FromSeconds(10),
-                    errorNumbersToAdd: null);
-            });
-        }
-        catch
-        {
-            options.UseInMemoryDatabase("PetManagementFallbackDb");
-        }
+            sqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(10),
+                errorNumbersToAdd: null);
+        });
     }
 });
 

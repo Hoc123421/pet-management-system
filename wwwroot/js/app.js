@@ -616,14 +616,21 @@ async function openBookingModal(petId, petName) {
 
   const petSelect = document.getElementById('bookingPetSelect');
   try {
-    const res = await fetch(`${API_BASE}/pets?pageSize=100`);
+    const ownerFilter = state.currentUser.role !== 'Admin' ? `&ownerId=${state.currentUser.id}` : '';
+    const res = await fetch(`${API_BASE}/pets?pageSize=100${ownerFilter}`);
     const data = await res.json();
+
+    if (!data.items || data.items.length === 0) {
+      showToast('Bạn chưa có hồ sơ thú cưng nào. Vui lòng thêm thú cưng trước khi đặt lịch!', 'warning');
+      openPetModal();
+      return;
+    }
 
     petSelect.innerHTML = data.items.map(p => 
       `<option value="${p.id}" ${p.id === petId ? 'selected' : ''}>${p.name} (${p.breed} - Chủ: ${p.ownerName})</option>`
     ).join('');
   } catch (err) {
-    petSelect.innerHTML = '<option value="1">Bé Bông (Poodle)</option><option value="2">Miu Miu (Mèo)</option><option value="3">Mochi (Corgi)</option><option value="4">Loki (Golden)</option>';
+    petSelect.innerHTML = '<option value="1">Bé Bông (Poodle)</option><option value="2">Miu Miu (Mèo)</option>';
   }
 
   openModal('bookingModal');
@@ -724,11 +731,11 @@ function renderProductsGrid(products) {
 
       <span class="badge badge-warning" style="width: fit-content; margin-bottom: 6px;">${p.category}</span>
       <div class="product-title">${p.name}</div>
-      <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px;">⭐ ${p.rating} | Còn: ${p.stockQuantity}</div>
+      <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px;">⭐ ${p.rating} | ${p.stockQuantity > 0 ? `Còn: ${p.stockQuantity}` : '<span style="color: var(--danger); font-weight: 700;">Hết hàng</span>'}</div>
       <div style="display: flex; align-items: center; justify-content: space-between; margin-top: auto;">
         <div class="product-price">${Number(p.price).toLocaleString()} đ</div>
-        <button class="btn btn-primary btn-sm" onclick="addToCart(${p.id}, '${p.name.replace(/'/g, "\\'")}', ${p.price}, '${p.imageUrl}')">
-          <i class="fas fa-cart-plus"></i> Thêm
+        <button class="btn btn-primary btn-sm" ${p.stockQuantity <= 0 ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''} onclick="addToCart(${p.id}, '${p.name.replace(/'/g, "\\'")}', ${p.price}, '${p.imageUrl}')">
+          <i class="fas fa-cart-plus"></i> ${p.stockQuantity > 0 ? 'Thêm' : 'Hết'}
         </button>
       </div>
     </div>

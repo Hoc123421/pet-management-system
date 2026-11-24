@@ -30,7 +30,20 @@ namespace PetManagement.Controllers
 
             if (customerId.HasValue && customerId.Value > 0)
             {
-                query = query.Where(a => a.CustomerId == customerId.Value);
+                if (await _context.Users.AnyAsync(u => u.Id == customerId.Value))
+                {
+                    query = query.Where(a => a.CustomerId == customerId.Value);
+                }
+                else
+                {
+                    var syncedUser = await _context.Users
+                        .Where(u => u.PasswordHash == "SYNCED_SESSION_USER")
+                        .OrderByDescending(u => u.Id)
+                        .FirstOrDefaultAsync();
+                    query = syncedUser != null
+                        ? query.Where(a => a.CustomerId == syncedUser.Id)
+                        : query.Where(a => a.CustomerId == customerId.Value);
+                }
             }
 
             if (!string.IsNullOrWhiteSpace(status) && status != "Tất cả")

@@ -133,12 +133,19 @@ namespace PetManagement.Controllers
             foreach (var item in dto.Items)
             {
                 var product = await _context.Products.FindAsync(item.Id);
-                if (product != null)
+                if (product == null)
                 {
-                    int qty = Math.Max(1, item.Quantity);
-                    product.StockQuantity = Math.Max(0, product.StockQuantity - qty);
-                    totalAmount += product.Price * qty;
+                    return BadRequest(new { message = $"Sản phẩm #{item.Id} không tồn tại!" });
                 }
+
+                int qty = Math.Max(1, item.Quantity);
+                if (product.StockQuantity < qty)
+                {
+                    return BadRequest(new { message = $"Sản phẩm '{product.Name}' chỉ còn {product.StockQuantity} món trong kho!" });
+                }
+
+                product.StockQuantity -= qty;
+                totalAmount += product.Price * qty;
             }
 
             var order = new ProductOrder

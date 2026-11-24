@@ -494,33 +494,27 @@ def generate_markdown():
     print(f"[OK] Đã tạo báo cáo Markdown: {OUTPUT_MD}")
 
 
-def make_run(text, bold=False, italic=False, size_half_pts=24, color="1F2937", font="Times New Roman"):
-    rpr = [
-        f'<w:rFonts w:ascii="{font}" w:hAnsi="{font}" w:cs="{font}"/>',
-        f'<w:sz w:val="{size_half_pts}"/>',
-        f'<w:szCs w:val="{size_half_pts}"/>',
-        f'<w:color w:val="{color}"/>'
-    ]
+def make_run(text, bold=False, italic=False, size_half_pts=None, color=None):
+    rpr = []
     if bold:
         rpr.append("<w:b/>")
     if italic:
         rpr.append("<w:i/>")
-    return f'<w:r><w:rPr>{"".join(rpr)}</w:rPr><w:t xml:space="preserve">{escape(text)}</w:t></w:r>'
+    if color:
+        rpr.append(f'<w:color w:val="{color}"/>')
+    if size_half_pts:
+        rpr.append(f'<w:sz w:val="{size_half_pts}"/><w:szCs w:val="{size_half_pts}"/>')
+    rpr_xml = f'<w:rPr>{"".join(rpr)}</w:rPr>' if rpr else ""
+    return f'<w:r>{rpr_xml}<w:t xml:space="preserve">{escape(text)}</w:t></w:r>'
 
 
-def make_paragraph(text, align="both", spacing_before=80, spacing_after=120, line=320,
-                   bold=False, italic=False, size_half_pts=24, color="1F2937",
-                   shading=None, border_bottom=None, indent_left=None):
-    ppr = [
-        f'<w:jc w:val="{align}"/>',
-        f'<w:spacing w:before="{spacing_before}" w:after="{spacing_after}" w:line="{line}" w:lineRule="auto"/>'
-    ]
-    if shading:
-        ppr.append(f'<w:shd w:val="clear" w:color="auto" w:fill="{shading}"/>')
-    if border_bottom:
-        ppr.append(f'<w:pBdr><w:bottom w:val="single" w:sz="12" w:space="4" w:color="{border_bottom}"/></w:pBdr>')
-    if indent_left:
-        ppr.append(f'<w:ind w:left="{indent_left}"/>')
+def make_paragraph(text, style=None, align=None, bold=False, italic=False, size_half_pts=None, color=None):
+    ppr = []
+    if style:
+        ppr.append(f'<w:pStyle w:val="{style}"/>')
+    if align:
+        ppr.append(f'<w:jc w:val="{align}"/>')
+    ppr_xml = f'<w:pPr>{"".join(ppr)}</w:pPr>' if ppr else ""
 
     runs = []
     parts = text.split("\n")
@@ -528,61 +522,41 @@ def make_paragraph(text, align="both", spacing_before=80, spacing_after=120, lin
         if idx > 0:
             runs.append("<w:r><w:br/></w:r>")
         runs.append(make_run(part, bold=bold, italic=italic, size_half_pts=size_half_pts, color=color))
-    return f'<w:p><w:pPr>{"".join(ppr)}</w:pPr>{"".join(runs)}</w:p>'
+    return f'<w:p>{ppr_xml}{"".join(runs)}</w:p>'
 
 
-def make_table(headers, rows):
-    tbl_pr = (
-        '<w:tblPr>'
-        '<w:tblW w:w="5000" w:type="pct"/>'
-        '<w:tblBorders>'
-        '<w:top w:val="single" w:sz="6" w:space="0" w:color="94A3B8"/>'
-        '<w:left w:val="single" w:sz="6" w:space="0" w:color="94A3B8"/>'
-        '<w:bottom w:val="single" w:sz="6" w:space="0" w:color="94A3B8"/>'
-        '<w:right w:val="single" w:sz="6" w:space="0" w:color="94A3B8"/>'
-        '<w:insideH w:val="single" w:sz="4" w:space="0" w:color="CBD5E1"/>'
-        '<w:insideV w:val="single" w:sz="4" w:space="0" w:color="CBD5E1"/>'
-        '</w:tblBorders>'
-        '<w:tblCellMar>'
-        '<w:top w:w="100" w:type="dxa"/>'
-        '<w:left w:w="140" w:type="dxa"/>'
-        '<w:bottom w:w="100" w:type="dxa"/>'
-        '<w:right w:w="140" w:type="dxa"/>'
-        '</w:tblCellMar>'
-        '</w:tblPr>'
-    )
-
-    tr_list = []
-    # Header row
-    h_cells = []
-    for h in headers:
-        cell_p = make_paragraph(h, align="center", spacing_before=40, spacing_after=40, line=260,
-                                bold=True, size_half_pts=22, color="FFFFFF")
-        h_cells.append(f'<w:tc><w:tcPr><w:shd w:val="clear" w:color="auto" w:fill="1E3A8A"/></w:tcPr>{cell_p}</w:tc>')
-    tr_list.append(f'<w:tr>{"".join(h_cells)}</w:tr>')
-
-    # Data rows
-    for r_idx, row in enumerate(rows):
-        fill = "F8FAFC" if r_idx % 2 == 1 else "FFFFFF"
-        r_cells = []
-        for c_idx, val in enumerate(row):
-            is_first_col = (c_idx == 0)
-            cell_p = make_paragraph(val, align="left", spacing_before=40, spacing_after=40, line=260,
-                                    bold=is_first_col, size_half_pts=21, color="1E293B")
-            r_cells.append(f'<w:tc><w:tcPr><w:shd w:val="clear" w:color="auto" w:fill="{fill}"/></w:tcPr>{cell_p}</w:tc>')
-        tr_list.append(f'<w:tr>{"".join(r_cells)}</w:tr>')
-
-    return f'<w:tbl>{tbl_pr}{"".join(tr_list)}</w:tbl><w:p/>'
+def make_table_as_paragraphs(headers, rows):
+    """Hiển thị dữ liệu bảng dưới dạng danh sách đoạn văn rõ ràng, tương thích 100% với template gốc và Word Dark Mode."""
+    paras = []
+    for row in rows:
+        if len(row) >= 3:
+            lead = f"- {row[0]} ({row[1]}): "
+            rest = " | ".join(row[2:])
+        elif len(row) == 2:
+            lead = f"- {row[0]}: "
+            rest = row[1]
+        else:
+            lead = "- "
+            rest = " | ".join(row)
+        paras.append(
+            f'<w:p>'
+            f'{make_run(lead, bold=True)}'
+            f'{make_run(rest)}'
+            f'</w:p>'
+        )
+    return "".join(paras)
 
 
 def make_image_block(rid, doc_pr_id, cx, cy, caption):
     drawing_p = (
-        '<w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="140" w:after="60"/></w:pPr>'
+        '<w:p><w:pPr><w:pStyle w:val="Normal"/><w:jc w:val="center"/></w:pPr>'
         '<w:r><w:drawing>'
         '<wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" '
         'distT="0" distB="0" distL="0" distR="0">'
         f'<wp:extent cx="{cx}" cy="{cy}"/>'
+        '<wp:effectExtent l="0" t="0" r="0" b="0"/>'
         f'<wp:docPr id="{doc_pr_id}" name="Picture {doc_pr_id}"/>'
+        '<wp:cNvGraphicFramePr><a:graphicFrameLocks xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" noChangeAspect="1"/></wp:cNvGraphicFramePr>'
         '<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">'
         '<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">'
         '<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">'
@@ -595,52 +569,83 @@ def make_image_block(rid, doc_pr_id, cx, cy, caption):
         '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>'
         '</pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>'
     )
-    caption_p = make_paragraph(caption, align="center", spacing_before=20, spacing_after=200,
-                               line=260, italic=True, size_half_pts=21, color="334155")
+    caption_p = make_paragraph(caption, align="center", italic=True)
     return drawing_p + caption_p
 
 
 def generate_docx():
-    """Tạo tệp Word .docx chuẩn OpenXML chứa toàn bộ nội dung, bảng biểu và 25 hình ảnh."""
+    """Tạo tệp Word .docx kế thừa 100% styles/fontTable/theme từ bản báo cáo gốc của người dùng."""
+    template_docx = r"C:\Users\nguye\.gemini\antigravity\brain\1ef45b86-f7aa-4d24-9ec8-d761fe58464b\.user_uploaded\media_1795523423436_615b055f.docx"
+
     body_parts = []
     media_entries = []  # (rid, abs_path, media_filename)
     img_counter = 1
 
+    # Trang bìa chuẩn theo đúng bản báo cáo gốc
+    body_parts.append(
+        '<w:p><w:pPr><w:jc w:val="center"/></w:pPr>'
+        '<w:r><w:rPr><w:b/><w:color w:val="003366"/><w:sz w:val="48"/></w:rPr>'
+        '<w:t>BÁO CÁO TỔNG KẾT DỰ ÁN</w:t></w:r></w:p>'
+    )
+    body_parts.append('<w:p><w:r><w:br/></w:r><w:r><w:br/></w:r></w:p>')
+    body_parts.append(
+        '<w:p><w:pPr><w:jc w:val="center"/></w:pPr>'
+        '<w:r><w:rPr><w:b/><w:sz w:val="40"/></w:rPr><w:t>HỆ THỐNG QUẢN LÝ THÚ CƯNG</w:t></w:r>'
+        '<w:r><w:rPr><w:b/><w:sz w:val="40"/></w:rPr><w:br/></w:r>'
+        '<w:r><w:rPr><w:b/><w:sz w:val="40"/></w:rPr><w:t>(PET MANAGEMENT SYSTEM &amp; CI/CD DEVOPS)</w:t></w:r></w:p>'
+    )
+    body_parts.append('<w:p>' + '<w:r><w:br/></w:r>' * 8 + '</w:p>')
+    body_parts.append(
+        '<w:p><w:pPr><w:jc w:val="right"/></w:pPr>'
+        '<w:r><w:t>Người thực hiện: Nhóm phát triển</w:t></w:r>'
+        '<w:r><w:br/></w:r>'
+        '<w:r><w:t>Ngày hoàn thành: Tháng 11/2026</w:t></w:r>'
+        '<w:r><w:br/></w:r>'
+        '<w:r><w:t>GitHub: https://github.com/Hoc123421/pet-management-system</w:t></w:r></w:p>'
+    )
+    body_parts.append('<w:p><w:r><w:br w:type="page"/></w:r></w:p>')
+
+    # Trang MỤC LỤC chuẩn theo đúng bản báo cáo gốc
+    body_parts.append('<w:p><w:pPr><w:pStyle w:val="Heading1"/><w:jc w:val="center"/></w:pPr><w:r><w:t>MỤC LỤC</w:t></w:r></w:p>')
+    toc_lines = [
+        "Chương 1: Tổng quan về dự án ........................................................................................ 3",
+        "Chương 2: Phân tích và Thiết kế hệ thống (UML) .......................................................... 6",
+        "Chương 3: Kiến trúc hệ thống và Công nghệ sử dụng .................................................. 20",
+        "Chương 4: Thiết kế cấu trúc Cơ sở dữ liệu (SQL Server 2022) .................................... 24",
+        "Chương 5: Chi tiết các Module chức năng & RESTful API ............................................ 30",
+        "Chương 6: Đóng gói Docker & Triển khai CI/CD (Jenkins, SonarQube, SSH) .............. 36",
+        "Chương 7: Giám sát hệ thống thời gian thực với Prometheus & Grafana .................... 46",
+        "Chương 8: Tổng kết, Đánh giá kết quả và Hướng phát triển ........................................ 52",
+    ]
+    for tl in toc_lines:
+        body_parts.append(make_paragraph(tl))
+    body_parts.append('<w:p><w:r><w:br w:type="page"/></w:r></w:p>')
+
+    # Nội dung chính từ Chương 1 đến Chương 8 (bỏ qua phần header đầu của REPORT_BLOCKS)
+    started_ch1 = False
     for kind, content in REPORT_BLOCKS:
-        if kind == "title":
-            body_parts.append(make_paragraph(content, align="center", spacing_before=240, spacing_after=120,
-                                             line=320, bold=True, size_half_pts=40, color="1E3A8A"))
-        elif kind == "subtitle":
-            body_parts.append(make_paragraph(content, align="center", spacing_before=60, spacing_after=180,
-                                             line=320, bold=True, size_half_pts=28, color="0F172A",
-                                             border_bottom="1E3A8A"))
-        elif kind == "meta":
-            body_parts.append(make_paragraph(content, align="center", spacing_before=40, spacing_after=60,
-                                             line=280, italic=True, size_half_pts=22, color="475569"))
-        elif kind == "pagebreak":
+        if kind == "h1" and content.startswith("CHƯƠNG 1"):
+            started_ch1 = True
+        if not started_ch1:
+            continue
+
+        if kind == "pagebreak":
             body_parts.append('<w:p><w:r><w:br w:type="page"/></w:r></w:p>')
         elif kind == "h1":
-            body_parts.append(make_paragraph(content, align="left", spacing_before=280, spacing_after=160,
-                                             line=320, bold=True, size_half_pts=30, color="1E3A8A",
-                                             border_bottom="1E3A8A"))
+            body_parts.append(make_paragraph(content, style="Heading1"))
         elif kind == "h2":
-            body_parts.append(make_paragraph(content, align="left", spacing_before=220, spacing_after=100,
-                                             line=300, bold=True, size_half_pts=26, color="0F172A"))
+            body_parts.append(make_paragraph(content, style="Heading2"))
         elif kind == "h3":
-            body_parts.append(make_paragraph(content, align="left", spacing_before=160, spacing_after=80,
-                                             line=280, bold=True, size_half_pts=24, color="1E40AF"))
+            body_parts.append(make_paragraph(content, style="Heading2"))
         elif kind == "p":
-            body_parts.append(make_paragraph(content, align="both", spacing_before=60, spacing_after=120,
-                                             line=320, size_half_pts=24, color="1F2937"))
+            body_parts.append(make_paragraph(content))
         elif kind == "bullet":
-            body_parts.append(make_paragraph("•  " + content, align="both", spacing_before=40, spacing_after=90,
-                                             line=300, size_half_pts=24, color="1F2937", indent_left=360))
+            body_parts.append(make_paragraph("- " + content))
         elif kind == "code":
-            body_parts.append(make_paragraph(content, align="left", spacing_before=80, spacing_after=120,
-                                             line=260, size_half_pts=20, color="0F172A", shading="F1F5F9"))
+            body_parts.append(make_paragraph(content))
         elif kind == "table":
             headers, rows = content
-            body_parts.append(make_table(headers, rows))
+            body_parts.append(make_table_as_paragraphs(headers, rows))
         elif kind == "image":
             rel_path, caption = content
             abs_img = os.path.join(ROOT_DIR, rel_path.replace("/", os.sep))
@@ -648,7 +653,6 @@ def generate_docx():
                 rid = f"rIdImg{img_counter}"
                 media_name = f"img_{img_counter:02d}_{os.path.basename(abs_img)}"
                 w, h = get_png_dimensions(abs_img)
-                # Giới hạn chiều rộng tối đa ~15.2 cm (5,486,400 EMUs) và chiều cao tối đa ~18 cm (6,480,000 EMUs)
                 max_cx = 5486400
                 max_cy = 6200000
                 cx = max_cx
@@ -663,61 +667,75 @@ def generate_docx():
     sect_pr = (
         '<w:sectPr>'
         '<w:pgSz w:w="11906" w:h="16838"/>'
-        '<w:pgMar w:top="1440" w:right="1260" w:bottom="1440" w:left="1440" '
+        '<w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" '
         'w:header="720" w:footer="720" w:gutter="0"/>'
         '</w:sectPr>'
     )
 
     document_xml = (
-        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-        '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" '
+        '<?xml version="1.0" encoding="utf-8" standalone="yes"?>'
+        '<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" '
+        'xmlns:mo="http://schemas.microsoft.com/office/mac/office/2008/main" '
+        'xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" '
+        'xmlns:mv="urn:schemas-microsoft-com:mac:vml" '
+        'xmlns:o="urn:schemas-microsoft-com:office:office" '
         'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" '
+        'xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" '
+        'xmlns:v="urn:schemas-microsoft-com:vml" '
+        'xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" '
         'xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" '
+        'xmlns:w10="urn:schemas-microsoft-com:office:word" '
+        'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" '
+        'xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" '
+        'xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" '
+        'xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" '
+        'xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" '
+        'xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" '
+        'mc:Ignorable="w14 wp14" '
         'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
-        'xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">'
+        'xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture" '
+        'xmlns:a14="http://schemas.microsoft.com/office/drawing/2010/main">'
         f'<w:body>{"".join(body_parts)}{sect_pr}</w:body>'
         '</w:document>'
     )
 
-    rels_items = [
+    base_rels = [
+        '<Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml" Id="rId3" />',
+        '<Relationship Type="http://schemas.microsoft.com/office/2007/relationships/stylesWithEffects" Target="stylesWithEffects.xml" Id="rId4" />',
+        '<Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Target="settings.xml" Id="rId5" />',
+        '<Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/webSettings" Target="webSettings.xml" Id="rId6" />',
+        '<Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/fontTable" Target="fontTable.xml" Id="rId7" />',
+        '<Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml" Id="rId8" />',
+        '<Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/customXml" Target="../customXml/item1.xml" Id="rId1" />',
+        '<Relationship Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml" Id="rId2" />',
+    ]
+    img_rels = [
         f'<Relationship Id="{rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/{media_name}"/>'
         for rid, _, media_name in media_entries
     ]
     doc_rels_xml = (
-        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<?xml version="1.0" encoding="utf-8"?>'
         '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-        f'{"".join(rels_items)}'
+        f'{"".join(base_rels)}{"".join(img_rels)}'
         '</Relationships>'
-    )
-
-    root_rels_xml = (
-        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>'
-        '</Relationships>'
-    )
-
-    content_types_xml = (
-        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-        '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
-        '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
-        '<Default Extension="xml" ContentType="application/xml"/>'
-        '<Default Extension="png" ContentType="image/png"/>'
-        '<Default Extension="jpg" ContentType="image/jpeg"/>'
-        '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
-        '</Types>'
     )
 
     with zipfile.ZipFile(OUTPUT_DOCX, "w", zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr("[Content_Types].xml", content_types_xml)
-        zf.writestr("_rels/.rels", root_rels_xml)
+        if os.path.exists(template_docx):
+            with zipfile.ZipFile(template_docx, "r") as tpl:
+                for item in tpl.namelist():
+                    if item in ("word/document.xml", "word/_rels/document.xml.rels"):
+                        continue
+                    if item.startswith("media/") or item.startswith("word/media/"):
+                        continue
+                    zf.writestr(item, tpl.read(item))
         zf.writestr("word/document.xml", document_xml)
         zf.writestr("word/_rels/document.xml.rels", doc_rels_xml)
         for _, abs_img, media_name in media_entries:
             zf.write(abs_img, f"word/media/{media_name}")
 
     shutil.copy2(OUTPUT_DOCX, OUTPUT_WWW_DOCX)
-    print(f"[OK] Đã tạo báo cáo Word (.docx) với {len(media_entries)} hình ảnh tại:")
+    print(f"[OK] Đã tạo lại báo cáo Word (.docx) chuẩn phông chữ và style gốc với {len(media_entries)} hình ảnh:")
     print(f"     - {OUTPUT_DOCX} ({os.path.getsize(OUTPUT_DOCX):,} bytes)")
     print(f"     - {OUTPUT_WWW_DOCX} ({os.path.getsize(OUTPUT_WWW_DOCX):,} bytes)")
 

@@ -249,8 +249,117 @@ namespace PetManagement.Tests
             var meRes = await controller.GetCurrentUser(1) as OkObjectResult;
             Assert.NotNull(meRes);
 
+            var notFoundMe = await controller.GetCurrentUser(9999) as NotFoundObjectResult;
+            Assert.NotNull(notFoundMe);
+
+            var badLogin = await controller.Login(new LoginDto { Email = "", Password = "" }) as BadRequestObjectResult;
+            Assert.NotNull(badLogin);
+
+            var unauthLogin = await controller.Login(new LoginDto { Email = "admin@petcare.com", Password = "wrong" }) as UnauthorizedObjectResult;
+            Assert.NotNull(unauthLogin);
+
+            var badReg = await controller.Register(new RegisterDto { Email = "", Password = "", FullName = "" }) as BadRequestObjectResult;
+            Assert.NotNull(badReg);
+
+            var dupReg = await controller.Register(new RegisterDto { Email = "admin@petcare.com", Password = "123", FullName = "Admin" }) as BadRequestObjectResult;
+            Assert.NotNull(dupReg);
+
+            var badOauth = await controller.OAuth2Login(new OAuth2LoginDto { Email = "" }) as BadRequestObjectResult;
+            Assert.NotNull(badOauth);
+
+            var badGoogle = await controller.GoogleLogin(new GoogleJwtLoginDto { IdToken = "" }) as BadRequestObjectResult;
+            Assert.NotNull(badGoogle);
+
+            var invalidGoogle = await controller.GoogleLogin(new GoogleJwtLoginDto { IdToken = "invalid.jwt.token" }) as BadRequestObjectResult;
+            Assert.NotNull(invalidGoogle);
+
+            var badSync = await controller.SyncSession(new UserDto { Id = 0, Email = "" }) as BadRequestObjectResult;
+            Assert.NotNull(badSync);
+
+            var newSync = await controller.SyncSession(new UserDto { Id = 55, FullName = "Synced User", Email = "synced@petcare.com", Role = "Customer" }) as OkObjectResult;
+            Assert.NotNull(newSync);
+
+            var existingSync = await controller.SyncSession(new UserDto { Id = 55, FullName = "Synced User", Email = "synced@petcare.com", Role = "Customer" }) as OkObjectResult;
+            Assert.NotNull(existingSync);
+
+            var byIdSync = await controller.SyncSession(new UserDto { Id = 999, FullName = "Updated Synced", Email = "", Role = "Customer" }) as OkObjectResult;
+            Assert.NotNull(byIdSync);
+
             var logoutRes = controller.Logout() as OkObjectResult;
             Assert.NotNull(logoutRes);
+        }
+
+        [Fact]
+        public async Task PetsProductsAndAppointments_EdgeCasesAndBulkDelete_WorkCorrectly()
+        {
+            using var db = CreateContext();
+            var petsCtrl = new PetsApiController(db);
+            var prodCtrl = new ProductsApiController(db);
+            var apptCtrl = new AppointmentsApiController(db);
+            var svcCtrl = new ServicesApiController(db);
+
+            // Create pet with non-existent ownerId to trigger autoUser creation & fallback
+            var customPet = new Pet
+            {
+                Name = "Ngáo Husky",
+                Species = "Mèo",
+                Breed = "Husky",
+                AgeYears = 1,
+                WeightKg = 3.5,
+                Gender = "Đực",
+                OwnerId = 999
+            };
+            var createdRes = await petsCtrl.CreatePet(customPet) as CreatedAtActionResult;
+            Assert.NotNull(createdRes);
+            var createdPet = Assert.IsType<Pet>(createdRes!.Value);
+
+            // Query pets with non-existent ownerId to cover syncedUser fallback & sort options
+            Assert.NotNull(await petsCtrl.GetPets(null, "Mèo", "Đực", 999, "age_asc") as OkObjectResult);
+            Assert.NotNull(await petsCtrl.GetPets(null, null, null, null, "age_desc") as OkObjectResult);
+            Assert.NotNull(await petsCtrl.GetPets(null, null, null, null, "weight_desc") as OkObjectResult);
+            Assert.NotNull(await petsCtrl.GetPetById(createdPet.Id) as OkObjectResult);
+            Assert.NotNull(await petsCtrl.GetPetById(99999) as NotFoundObjectResult);
+            Assert.NotNull(await petsCtrl.CreatePet(new Pet { Name = "" }) as BadRequestObjectResult);
+
+            // Create appointment for customPet with non-existent customerId fallback
+            var apptRes = await apptCtrl.CreateAppointment(new AppointmentCreateDto
+            {
+                PetId = createdPet.Id,
+                ServiceId = 1,
+                Notes = "Test"
+            }, 999) as OkObjectResult;
+            Assert.NotNull(apptRes);
+
+            Assert.NotNull(await apptCtrl.GetAppointments(999, "Tất cả") as OkObjectResult);
+            Assert.NotNull(await apptCtrl.CreateAppointment(new AppointmentCreateDto { PetId = 9999, ServiceId = 9999 }, 1) as BadRequestObjectResult);
+
+            // Bulk delete custom pets (which also cleans up related appointments)
+            var bulkDel1 = await petsCtrl.DeleteCustomPets() as OkObjectResult;
+            Assert.NotNull(bulkDel1);
+
+            // Call bulk delete again when no custom pets remain
+            var bulkDel2 = await petsCtrl.DeleteCustomPets() as OkObjectResult;
+            Assert.NotNull(bulkDel2);
+
+            // Delete seeded pet #1 (which has seeded appointment #1) to cover relatedAppointments cleanup in DeletePet
+            var delSeedPet = await petsCtrl.DeletePet(1) as OkObjectResult;
+            Assert.NotNull(delSeedPet);
+
+            // Product & Service edge cases
+            Assert.NotNull(await prodCtrl.GetProducts("Royal", "Thức Ăn", "price_desc") as OkObjectResult);
+            Assert.NotNull(await prodCtrl.GetProducts(null, null, "rating_desc") as OkObjectResult);
+            Assert.NotNull(await prodCtrl.GetProductById(1) as OkObjectResult);
+            Assert.NotNull(await prodCtrl.GetProductById(9999) as NotFoundObjectResult);
+            Assert.NotNull(await prodCtrl.CreateProduct(new Product { Name = "", Price = 0 }) as BadRequestObjectResult);
+            Assert.NotNull(await prodCtrl.Checkout(new ProductCheckoutDto { Items = new List<CartItemDto>() }) as BadRequestObjectResult);
+            Assert.NotNull(await prodCtrl.Checkout(new ProductCheckoutDto { Items = new List<CartItemDto> { new CartItemDto { Id = 9999, Quantity = 1 } } }) as BadRequestObjectResult);
+            Assert.NotNull(await prodCtrl.Checkout(new ProductCheckoutDto { Items = new List<CartItemDto> { new CartItemDto { Id = 1, Quantity = 99999 } } }) as BadRequestObjectResult);
+
+            Assert.NotNull(await svcCtrl.GetServices("Spa", "Spa & Grooming", "price_desc") as OkObjectResult);
+            Assert.NotNull(await svcCtrl.GetServices(null, null, "name") as OkObjectResult);
+            Assert.NotNull(await svcCtrl.GetServiceById(1) as OkObjectResult);
+            Assert.NotNull(await svcCtrl.GetServiceById(9999) as NotFoundObjectResult);
+            Assert.NotNull(await svcCtrl.CreateService(new PetService { Name = "", Price = 0 }) as BadRequestObjectResult);
         }
     }
 }

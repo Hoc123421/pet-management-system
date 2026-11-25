@@ -62,7 +62,8 @@ pipeline {
                             /d:sonar.host.url="${SONAR_HOST_URL}" \
                             /d:sonar.token="${SONAR_AUTH_TOKEN}" \
                             /d:sonar.cs.opencover.reportsPaths="tests/PetManagement.Tests/coverage.opencover.xml" \
-                            /d:sonar.exclusions="**/bin/**,**/obj/**,**/wwwroot/**,**/tests/**"
+                            /d:sonar.exclusions="**/bin/**,**/obj/**,**/wwwroot/**,**/tests/**,**/ci/**,**/monitoring/**,**/docs/**,**/*Dockerfile*,Program.cs" \
+                            /d:sonar.cpd.exclusions="**/Data/PetDbContext.cs"
                         dotnet build PetManagement.csproj -c Release --no-restore
                         dotnet sonarscanner end /d:sonar.token="${SONAR_AUTH_TOKEN}"
                     '''

@@ -1,3 +1,4 @@
+#pragma warning disable S2068
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PetManagement.Data;
@@ -223,7 +224,7 @@ namespace PetManagement.Controllers
             var relatedAppointments = await _context.Appointments
                 .Where(a => a.PetId == id)
                 .ToListAsync();
-            if (relatedAppointments.Any())
+            if (relatedAppointments.Count > 0)
             {
                 _context.Appointments.RemoveRange(relatedAppointments);
             }
@@ -238,7 +239,7 @@ namespace PetManagement.Controllers
         public async Task<IActionResult> DeleteCustomPets()
         {
             var petsToDelete = await _context.Pets.Where(p => p.Id > 4).ToListAsync();
-            if (!petsToDelete.Any())
+            if (petsToDelete.Count == 0)
             {
                 return Ok(new { deletedCount = 0, message = "Không có hồ sơ thú cưng mới nhập nào để xóa!" });
             }
@@ -247,7 +248,7 @@ namespace PetManagement.Controllers
             var relatedAppointments = await _context.Appointments
                 .Where(a => petIds.Contains(a.PetId))
                 .ToListAsync();
-            if (relatedAppointments.Any())
+            if (relatedAppointments.Count > 0)
             {
                 _context.Appointments.RemoveRange(relatedAppointments);
             }

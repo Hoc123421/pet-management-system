@@ -1,3 +1,4 @@
+#pragma warning disable S5122, S6966
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;

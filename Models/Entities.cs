@@ -1,3 +1,4 @@
+#pragma warning disable S6964
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;

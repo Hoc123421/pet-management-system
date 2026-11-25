@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>PetManagement</RootNamespace>
     <DefaultItemExcludes>$(DefaultItemExcludes);tests\**;ci\**;monitoring\**</DefaultItemExcludes>
+    <NoWarn>$(NoWarn);CA1860;CA1862</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

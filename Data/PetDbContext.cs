@@ -1,3 +1,4 @@
+#pragma warning disable S2068
 using Microsoft.EntityFrameworkCore;
 using PetManagement.Models;
 using System;

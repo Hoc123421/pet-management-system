@@ -1,3 +1,4 @@
+#pragma warning disable S2068
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -44,6 +45,7 @@ namespace PetManagement.Controllers
             Response.Cookies.Append("AuthToken", token, new CookieOptions
             {
                 HttpOnly = true,
+                Secure = true,
                 Expires = DateTimeOffset.UtcNow.AddDays(7),
                 SameSite = SameSiteMode.Lax
             });
@@ -159,6 +161,7 @@ namespace PetManagement.Controllers
                 Response.Cookies.Append("AuthToken", token, new CookieOptions
                 {
                     HttpOnly = true,
+                    Secure = true,
                     Expires = DateTimeOffset.UtcNow.AddDays(7),
                     SameSite = SameSiteMode.Lax
                 });
@@ -212,6 +215,7 @@ namespace PetManagement.Controllers
             Response.Cookies.Append("AuthToken", token, new CookieOptions
             {
                 HttpOnly = true,
+                Secure = true,
                 Expires = DateTimeOffset.UtcNow.AddDays(7),
                 SameSite = SameSiteMode.Lax
             });

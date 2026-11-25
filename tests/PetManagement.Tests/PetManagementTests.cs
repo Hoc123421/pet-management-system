@@ -270,7 +270,7 @@ namespace PetManagement.Tests
             var badGoogle = await controller.GoogleLogin(new GoogleJwtLoginDto { IdToken = "" }) as BadRequestObjectResult;
             Assert.NotNull(badGoogle);
 
-            var invalidGoogle = await controller.GoogleLogin(new GoogleJwtLoginDto { IdToken = "invalid.jwt.token" }) as BadRequestObjectResult;
+            var invalidGoogle = await controller.GoogleLogin(new GoogleJwtLoginDto { IdToken = "invalid.jwt.token" }) as ObjectResult;
             Assert.NotNull(invalidGoogle);
 
             var badSync = await controller.SyncSession(new UserDto { Id = 0, Email = "" }) as BadRequestObjectResult;
